@@ -1,0 +1,103 @@
+{
+  "uid": "infra-telegraf",
+  "title": "Infraestrutura - Telegraf",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-15m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "gauge",
+      "title": "CPU (%)",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-telegraf" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent", "min": 0, "max": 100,
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "orange", "value": 60 },
+            { "color": "red", "value": 85 }
+          ] }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"telegraf\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r._measurement == \"cpu\" and r._field == \"usage_idle\" and r.cpu == \"cpu-total\") |> map(fn: (r) => ({r with _value: 100.0 - r._value}))"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "gauge",
+      "title": "Memória usada (%)",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-telegraf" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent", "min": 0, "max": 100,
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "orange", "value": 70 },
+            { "color": "red", "value": 90 }
+          ] }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"telegraf\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r._measurement == \"mem\" and r._field == \"used_percent\")"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "gauge",
+      "title": "Disco / usado (%)",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-telegraf" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent", "min": 0, "max": 100,
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "orange", "value": 75 },
+            { "color": "red", "value": 90 }
+          ] }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"telegraf\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r._measurement == \"disk\" and r._field == \"used_percent\" and r.path == \"/\")"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "CPU e memória ao longo do tempo (%)",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-telegraf" },
+      "fieldConfig": {
+        "defaults": { "unit": "percent", "min": 0, "max": 100 },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"telegraf\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r._measurement == \"cpu\" and r._field == \"usage_idle\" and r.cpu == \"cpu-total\") |> map(fn: (r) => ({r with _value: 100.0 - r._value, _field: \"cpu_usada\"})) |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        },
+        {
+          "refId": "B",
+          "query": "from(bucket: \"telegraf\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r._measurement == \"mem\" and r._field == \"used_percent\") |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ]
+    }
+  ]
+}
